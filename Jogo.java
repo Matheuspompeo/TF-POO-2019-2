@@ -1,5 +1,3 @@
-
-import javafx.event.ActionEvent;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -7,6 +5,8 @@ import java.util.Map;
 import java.util.Random;
 
 import javafx.application.Application;
+import static javafx.application.Application.launch;
+import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -17,14 +17,18 @@ import javafx.scene.image.Image;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
-
+import javafx.application.Platform;
+/**
+ *
+ * @author joao, matheus
+ */
 public class Jogo extends Application {
-    public static final int CELL_WIDTH = 30;
-    public static final int CELL_HEIGHT = 30;
-    public static final int NLIN = 8;
-    public static final int NCOL = 8;
-    public static final int QTDAEBOBOES = 2;
-    public static final int QTDADEZUMBIS = 1;
+    public static final int CELL_WIDTH = 20;
+    public static final int CELL_HEIGHT = 20;
+    public static final int NLIN = 10;
+    public static final int NCOL = 10;
+    public static final int QTDADEJORNALISTAS = 5;
+    public static final int QTDADEPSICOPATAS = 1;
 
     public static Jogo jogo = null;
 
@@ -66,13 +70,14 @@ public class Jogo extends Application {
         aux = new Image("file:Imagens\\img2.jpg");
         imagens.put("Infectado", aux);
         aux = new Image("file:Imagens\\img8.jpg");
-        imagens.put("Zumbi", aux);
+        imagens.put("Psicopata", aux);
         aux = new Image("file:Imagens\\img6.jpg");
         imagens.put("Morto", aux);
+        aux = new Image("file:Imagens\\img7.jpg");
+        imagens.put("Esperto", aux);
         aux = new Image("file:Imagens\\back.jpg");
         imagens.put("Vazio", aux);
-        aux = new Image("file:Imagens\\img7.jpg");
-        imagens.put("ZumbiEsp", aux);
+
         // Armazena a imagem da celula ula
         imagens.put("Null", null);
     }
@@ -87,19 +92,18 @@ public class Jogo extends Application {
         loadImagens();
 
         // Configura a interface com o usuario
-        primaryStage.setTitle("Simulador de Zumbis");
+        primaryStage.setTitle("Simulador");
         GridPane tab = new GridPane();
         tab.setAlignment(Pos.CENTER);
         tab.setHgap(10);
         tab.setVgap(10);
         tab.setPadding(new Insets(25, 25, 25, 25));
-
         // Monta o "tabuleiro"
         celulas = new ArrayList<>(NLIN*NCOL);
         for (int lin = 0; lin < NLIN; lin++) {
             for (int col = 0; col < NCOL; col++) {
                 Celula cel = new Celula(lin,col);
-                cel.setOnAction(e->clicouCelula(e));
+                cel.setOnAction(e->cliqueNaCelula(e));
                 celulas.add(cel);
                 tab.add(cel, col, lin);
             }
@@ -107,12 +111,14 @@ public class Jogo extends Application {
 
         // Cria a lista de personagens
         personagens = new ArrayList<>(NLIN*NCOL);
-
-        // Cria um Zumbi esperto
-        personagens.add(new ZumbiEsperto(0,0));
-
-        // Cria 10 boboes aleatorios
-        for(int i=0;i<QTDAEBOBOES;i++){
+  
+        personagens.add(new PsicopataEsperto(6,6));
+        //personagens.add(new Jornalista(0,0));
+        //personagens.add(new Jornalista(4,0));
+        
+        
+        // Cria jornalistas aleatorios
+        for(int i=0;i<QTDADEJORNALISTAS;i++){
             // Lembrte: quando um personagem é criado ele se vincula
             // automaticamente na célula indicada nos parametros
             // linha e coluna (ver o construtor de Personagem)
@@ -121,25 +127,24 @@ public class Jogo extends Application {
                 int lin = random.nextInt(NLIN);
                 int col = random.nextInt(NCOL);
                 if (this.getCelula(lin, col).getPersonagem() == null){
-                    personagens.add(new Bobao(lin,col));
+                    personagens.add(new Jornalista(lin,col));
                     posOk = true;
                 }
             }
         }
-/*
-        // Cria 5 Zumbis aleatórios
-        for(int i=0;i<QTDADEZUMBIS;i++){
+        
+        // Cria Psicopatas aleatórios
+        for(int i=0;i<QTDADEPSICOPATAS;i++){
             boolean posOk = false;
             while(!posOk){
                 int lin = random.nextInt(NLIN);
                 int col = random.nextInt(NCOL);
                 if (this.getCelula(lin, col).getPersonagem() == null){
-                    personagens.add(new Zumbi(lin,col));
+                    personagens.add(new Psicopata(lin,col));
                     posOk = true;
                 }
             }
         }
-*/
 
         // Define o botao que avança a simulação
         Button avanca = new Button("NextStep");
@@ -168,23 +173,28 @@ public class Jogo extends Application {
         // Verifica se o jogo acabou
         long vivos = personagens
                     .stream()
-                    .filter(p->!(p instanceof Zumbi))
-                    .filter(p->!(p instanceof ZumbiEsperto))
+                    .filter(p->!(p instanceof Psicopata))
+                    .filter(p->!(p instanceof PsicopataEsperto))
                     .filter(p->p.estaVivo())
                     .count();
         if (vivos == 0){
             Alert msgBox = new Alert(AlertType.INFORMATION);
             msgBox.setHeaderText("Fim de Jogo");
-            msgBox.setContentText("Todos os boboes morreram!");
+            msgBox.setContentText("Todos os jornalistas morreram!");
             msgBox.showAndWait();
             System.exit(0);
         }
     }
 
-    public void clicouCelula(ActionEvent e){
+    
+
+    public void cliqueNaCelula(ActionEvent e){
         Celula c = (Celula)e.getSource();
-        if (c.getPersonagem() != null){
-            System.out.println("Tem personagem aqui!!");
+        System.out.println("Celula: l="+c.getLinha()+" c="+c.getColuna());
+        Personagem p = c.getPersonagem();
+        if (p.infectado()){
+            p.cura();
         }
     }
 }
+

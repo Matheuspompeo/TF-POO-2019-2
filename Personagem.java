@@ -1,3 +1,5 @@
+import java.util.Random;
+
 public abstract class Personagem {
     private String imagem; // Identificador da imagem
     private int energia;
@@ -30,6 +32,16 @@ public abstract class Personagem {
 
     public boolean infectado(){
         return infectado;
+    }
+
+    public void chanceInfectar(){
+        Random r = new Random();                    
+        int inf = r.nextInt(101);
+    }
+
+    public void chanceMatar(){
+        Random r = new Random();                    
+        int mat = r.nextInt(101);
     }
 
     public void infecta(){
